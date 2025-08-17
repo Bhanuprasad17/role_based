@@ -6,52 +6,69 @@ import jwt from "jsonwebtoken";
 export const loginController = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log(email, password);
+
+    // If email/password not provided → Bad Request
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
+    }
 
     const user = await User.findOne({ email });
 
+    // User not found → 404 Not Found
     if (!user) {
-      res.json({
+      return res.status(404).json({
         message: "User not found",
       });
     }
 
-    console.log(user.password);
-
     const isMatch = await bcrypt.compare(password, user.password);
 
+    // Password mismatch → 401 Unauthorized
     if (!isMatch) {
-      res.status(401).json({
+      return res.status(401).json({
         message: "Invalid credentials",
       });
     }
 
+    // Create token if valid
     const token = jwt.sign(
       {
         id: user._id,
         name: user.name,
         email: user.email,
-        role : user.role
+        role: user.role,
       },
       process.env.SECRET_KEY,
       {
         expiresIn: "1h",
       }
     );
-    res.status(200).json({
+
+    // Success → 200 OK
+    return res.status(200).json({
       message: "Login successful",
-      user : {
-        id : user._id,
-        name : user.name,
-        email : user.email,
-        role : user.role
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
       },
       token,
     });
   } catch (error) {
-    res.end(error);
+    console.error(error);
+    // Server error → 500 Internal Server Error
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message, // you can remove in prod to avoid leaking info
+    });
   }
 };
+
+
+
 export const registerController = async (req, res) => {
   try {
     const { username, email, password,role } = req.body;
