@@ -13,7 +13,6 @@ export const isAdmin = async (req, res, next) => {
         message: "Forbidden: Admins only",
       });
     }
-
     next(); // ✅ only call next if user is admin
   } catch (error) {
     console.error("isAdmin middleware error:", error);

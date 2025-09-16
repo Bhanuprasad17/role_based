@@ -46,52 +46,66 @@ export const getAllBooks = async (req, res) => {
 export const getBook = async (req, res) => {
   try {
     const { id } = req.params;
-    // console.log(id,'param')
 
-    const book = await Book.findById({ _id: id });
+    // ✅ Use findById correctly
+    const book = await Book.findById(id);
 
     if (!book) {
-      res.json({
+      return res.status(404).json({
+        success: false,
         message: "Book not found",
       });
     }
 
-    res.status(200).json({
-      message: "Book",
-      book,
+    return res.status(200).json({
+      success: true,
+      message: "Book retrieved successfully",
+      data: book,
     });
-    // res.json('book')
   } catch (error) {
-    res.json({
+    console.error("Error fetching book:", error);
+
+    return res.status(500).json({
+      success: false,
       message: "Failed to get the book",
-      error: error,
+      error: error.message,
     });
   }
 };
 
 export const updateBook = async (req, res) => {
   try {
-    const id = req.params.id;
+    const { id } = req.params;
     const bookData = req.body;
-    const updatedBook = await Book.findByIdAndUpdate({ _id: id }, bookData, {
-      new: true,
+
+    // ✅ Correct usage of findByIdAndUpdate
+    const updatedBook = await Book.findByIdAndUpdate(id, bookData, {
+      new: true, // return updated doc
+      runValidators: true, // validate updates against schema
     });
 
     if (!updatedBook) {
-      return res.status(404).json({ message: "Book not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Book not found",
+      });
     }
 
-    console.log(updatedBook);
-
-    res.status(200).json({
+    return res.status(200).json({
+      success: true,
       message: "Book updated successfully",
-      book: updatedBook,
+      data: updatedBook,
     });
-
   } catch (error) {
-     res.status(500).json({ message: "Error updating book", error });
+    console.error("Error updating book:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error updating book",
+      error: error.message,
+    });
   }
 };
+
 
 
 export const deleteBook = async(req,res) =>{
