@@ -1,10 +1,17 @@
-import { json } from "express";
 import Book from "../models/Book.js";
 
+// 📌 Create Book
 export const postBook = async (req, res) => {
   try {
     const { title, author, publishedYear, price, available } = req.body;
-    console.log(title, author, publishedYear, price, available);
+
+    if (!title || !author || !publishedYear || !price) {
+      return res.status(400).json({
+        success: false,
+        message: "All required fields must be provided",
+      });
+    }
+
     const newBook = new Book({
       title,
       author,
@@ -14,40 +21,47 @@ export const postBook = async (req, res) => {
     });
 
     const savedBook = await newBook.save();
-    res.status(200).json({
-      message: "Book Added",
-      book: savedBook,
-    });
 
-    // res.end('createBook')
+    return res.status(201).json({
+      success: true,
+      message: "Book added successfully",
+      data: savedBook,
+    });
   } catch (error) {
-    res.status(500).json({
-      message: "Failed to get book",
-      error: error,
+    console.error("Error adding book:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to add book",
+      error: error.message,
     });
   }
 };
 
+// 📌 Get All Books
 export const getAllBooks = async (req, res) => {
   try {
     const allBooks = await Book.find();
-    res.status(200).json({
-      message: "All Books",
-      allBooks,
+
+    return res.status(200).json({
+      success: true,
+      message: "All books retrieved successfully",
+      data: allBooks,
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Failed to get Books",
-      error,
+    console.error("Error fetching books:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to get books",
+      error: error.message,
     });
   }
 };
 
+// 📌 Get Single Book
 export const getBook = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // ✅ Use findById correctly
     const book = await Book.findById(id);
 
     if (!book) {
@@ -64,7 +78,6 @@ export const getBook = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching book:", error);
-
     return res.status(500).json({
       success: false,
       message: "Failed to get the book",
@@ -73,15 +86,14 @@ export const getBook = async (req, res) => {
   }
 };
 
+// 📌 Update Book
 export const updateBook = async (req, res) => {
   try {
     const { id } = req.params;
-    const bookData = req.body;
 
-    // ✅ Correct usage of findByIdAndUpdate
-    const updatedBook = await Book.findByIdAndUpdate(id, bookData, {
+    const updatedBook = await Book.findByIdAndUpdate(id, req.body, {
       new: true, // return updated doc
-      runValidators: true, // validate updates against schema
+      runValidators: true, // validate updates
     });
 
     if (!updatedBook) {
@@ -106,27 +118,31 @@ export const updateBook = async (req, res) => {
   }
 };
 
+// 📌 Delete Book
+export const deleteBook = async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    const deletedBook = await Book.findByIdAndDelete(id);
 
-export const deleteBook = async(req,res) =>{
-    try {
-        const id = req.params.id
-
-        const deletedBook = await Book.findByIdAndDelete(id)
-
-        if(!deletedBook){
-            res.json({
-                message : 'Book Not Found'
-            })
-        }
-
-        res.json({
-            message : 'Book deleted successfully',
-            deletedBook
-        })
-    } catch (error) {
-        res.json(error)
+    if (!deletedBook) {
+      return res.status(404).json({
+        success: false,
+        message: "Book not found",
+      });
     }
-}
 
-
+    return res.status(200).json({
+      success: true,
+      message: "Book deleted successfully",
+      data: deletedBook,
+    });
+  } catch (error) {
+    console.error("Error deleting book:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error deleting book",
+      error: error.message,
+    });
+  }
+};

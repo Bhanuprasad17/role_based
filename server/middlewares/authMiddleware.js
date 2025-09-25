@@ -1,40 +1,55 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-
 export const verifyUser = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader) {
-      res.status(401).json({
-        message: "authorization token is missing",
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization token is missing or invalid",
       });
     }
 
     const token = authHeader.split(" ")[1];
 
-    // console.log(token);
-
-    const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
-
-    // console.log(decodedToken);
-    // console.log(decodedToken.name);
-
-    const user = await User.findById(decodedToken.id).select("-password");
-
-    if (!user) {
-      res.json({
-        message: "user not found",
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Token not found",
       });
     }
 
-    // console.log('userjai',user)
+    // Verify token
+    const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
+
+    if (!decodedToken?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+
+    // Fetch user without password
+    const user = await User.findById(decodedToken.id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Attach user to request
     req.user = user;
     next();
   } catch (error) {
-    res.json({
-        error
-    })
+    console.error("JWT verification failed:", error.message);
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+      error: error.message,
+    });
   }
 };
